@@ -1,59 +1,108 @@
 import os
 from modular_funcs import inverse, is_quad_res, modular_root
 from ecc_ex import ECPoint, EC, ECPKS
+import time
 
-
-
-def read_file(file_name):
-    with open(file_name, 'r') as reader:
-        key = reader.read().split()
-    return key
+def read_key_file(filename):
+    with open(filename, 'rb') as reader:
+        return reader.read()
 
 def save_key(key, filename):
-    with open(filename, 'w') as writer:
-        writer.write(str(key))
-        
-    
+    with open(filename, 'wb') as writer:
+        writer.write(key)
+
 def save_as_binary(key, filename):
     if isinstance(key, int):
-        header = "private_key: "
-        key = bin(key)
-        key = header + str(key)
-        save_key(key, filename)
+        n_bytes = (key.bit_length() + 7) // 8
+        key_bytes = key.to_bytes(n_bytes, 'big')
+        save_key(key_bytes, filename)
     elif isinstance(key, ECPoint):
-        header = "public key:\n"
-        x = f'x: {bin(key.x)}\n'
-        y = f'y: {bin(key.y)}'
-        key = header + x + y
-        save_key(key, filename)
-        
+        n_bytes_x = (key.x.bit_length() + 7) // 8
+        n_bytes_y = (key.y.bit_length() + 7) // 8
+        x_bytes = key.x.to_bytes(n_bytes_x, 'big')
+        y_bytes = key.y.to_bytes(n_bytes_y, 'big')
+        save_key(x_bytes + y_bytes, filename)
     else:
         raise ValueError("Unsupported key type")
-
-
-def read_key(filename):
-    key = read_file(filename)
-    p = int(key[0][2:])
-    a = int(key[1][2:])
-    b = int(key[2][2:])
-    x = int(key[3][2:])
-    y = int(key[4][2:])
-    n = int(key[5][2:])
-    e = EC(p,a,b)
-    G = ECPoint(x,y)
-    return e, G, n
     
+def read_binary_key(filename, is_ec_point=False):
+    key_bytes = read_key_file(filename)
+    if not is_ec_point:
+        return int.from_bytes(key_bytes, 'big')
+    else:
+        half_length = len(key_bytes) // 2
+        x_bytes = key_bytes[:half_length]
+        y_bytes = key_bytes[half_length:]
+        x = int.from_bytes(x_bytes, 'big')
+        y = int.from_bytes(y_bytes, 'big')
+        return ECPoint(x, y)
+
+def read_key():
+    filename = input("Enter an elliptic curve key file or press enter to use the default file 'ec_bitcoin.txt': ")
+    if filename == '' or not os.path.exists(filename):
+        print("Using default file 'ec_bitcoin.txt'\n")
+        filename = 'ec_bitcoin.txt'
+    key = read_key_file(filename)
+    key_lines = key.decode().splitlines()
+    p = int(key_lines[0][2:])
+    a = int(key_lines[1][2:])
+    b = int(key_lines[2][2:])
+    x = int(key_lines[3][2:])
+    y = int(key_lines[4][2:])
+    n = int(key_lines[5][2:])
+    e = EC(p, a, b)
+    G = ECPoint(x, y)
+    return e, G, n
+
 
 
 def main():
-    filename = 'ec_bitcoin.txt'
-    e, G, n = read_key(filename)
-    ecc_obj = ECPKS(e, G, n) 
+    e, G, n = read_key()
+    ecc_obj = ECPKS(e, G, n)
     private_key, public_key = ecc_obj.make_key_pair()
     
-    save_as_binary(public_key, 'public_key.txt')
-    save_as_binary(private_key, 'private_key.txt') 
+    save_as_binary(public_key, 'public_key.bin')
+    save_as_binary(private_key, 'private_key.bin')
 
+    read_private_key = read_binary_key('private_key.bin')
+    read_public_key = read_binary_key('public_key.bin', is_ec_point=True)
+    print("\nChecking if keys saved and read successfully", end="", flush=True)
+    for _ in range(3):
+        time.sleep(0.4)
+        print(".", end="", flush=True)
+    time.sleep(0.8)
+    print(f"\nPrivate Key: {read_private_key == private_key}")
+    print(f"Public Key: {read_public_key.x == public_key.x}, {read_public_key.y == public_key.y}")
+    print("keys saved and read successfully")
 
 if __name__ == '__main__':
     main()
+
+    
+
+# i wasnt sure if i should literally save the key as a binary file or if i should convert the key to binary and save it as a string
+# def read_file(file_name):
+#     with open(file_name, 'r') as reader:
+#         key = reader.read().split()
+#     return key
+
+# def save_key(key, filename):
+#     with open(filename, 'w') as writer:
+#         writer.write(str(key))
+        
+    
+# def save_as_binary(key, filename):
+#     if isinstance(key, int):
+#         header = "private_key: "
+#         key = bin(key)
+#         key = header + str(key)
+#         save_key(key, filename)
+#     elif isinstance(key, ECPoint):
+#         header = "public key:\n"
+#         x = f'x: {bin(key.x)}\n'
+#         y = f'y: {bin(key.y)}'
+#         key = header + x + y
+#         save_key(key, filename)
+        
+#     else:
+#         raise ValueError("Unsupported key type")
