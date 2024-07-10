@@ -72,4 +72,4 @@ By the end of this course, students will be able to:
 
 This repository serves as a comprehensive resource for learning and practicing cryptography. It combines theoretical knowledge with practical exercises to provide a well-rounded understanding of the field.
 
-For any questions or issues, please contact [Your Name] at [your-email@example.com].
+For any questions or issues, please contact Dor Shukrun at dorke88@gmail.com.
