@@ -1,4 +1,4 @@
-```markdown
+
 # Encryption and Decryption with AES and ECC
 
 This project demonstrates the use of AES (Advanced Encryption Standard) for encryption and decryption of files, combined with ECC (Elliptic Curve Cryptography) for secure key exchange and digital signatures.
